@@ -22,7 +22,7 @@
     </select>
 
     <insert id="insertTestInput">
-        insert into test_input(uid, grade, college, question_1, question_2, question_3, question_4, question_5,
+        insert into test_input(uid, grade, college, is_like, question_1, question_2, question_3, question_4, question_5,
         question_6, question_7, question_8, question_9, question_10, question_11, question_12, question_13, question_14,
         question_15, question_16, question_17, question_18, question_19, question_20, question_21, question_22,
         question_23, question_24, question_25, question_26, question_27, question_28, question_29, question_30,
@@ -32,7 +32,7 @@
         question_55, question_56, question_57, question_58, question_59, question_60, question_61, question_62,
         question_63, question_64, question_65, question_66, question_67, question_68, question_69, question_70,
         question_71, question_72, question_73, question_74, question_75, question_76, question_77, question_78,
-        question_79, question_80) values (#{uid}, #{grade}, #{college}, #{question1}, #{question2}, #{question3},
+        question_79, question_80) values (#{uid}, #{grade}, #{college}, #{isLike}, #{question1}, #{question2}, #{question3},
         #{question4}, #{question5}, #{question6}, #{question7}, #{question8}, #{question9}, #{question10},
         #{question11}, #{question12}, #{question13}, #{question14}, #{question15}, #{question16}, #{question17},
         #{question18}, #{question19}, #{question20}, #{question21}, #{question22}, #{question23}, #{question24},
@@ -70,4 +70,12 @@
         #{question67}, #{question68}, #{question69}, #{question70}, #{question71}, #{question72}, #{question73},
         #{question74}, #{question75}, #{question76}, #{question77}, #{question78}, #{question79}, #{question80})
     </insert>
+
+    <update id="updateUserStatus">
+        update user set status = 1 where id = #{id};
+    </update>
+    
+    <select id="selectOpenIdById" resultType="java.lang.String">
+        select open_id from user where id = #{id}
+    </select>
 </mapper>

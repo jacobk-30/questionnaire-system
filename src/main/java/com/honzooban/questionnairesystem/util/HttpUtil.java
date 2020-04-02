@@ -1,6 +1,7 @@
 package com.honzooban.questionnairesystem.util;
 
 import com.alibaba.druid.support.json.JSONUtils;
+import com.honzooban.questionnairesystem.common.Constant;
 import com.honzooban.questionnairesystem.util.vaild.CommonValidator;
 import net.sf.json.JSONObject;
 import org.apache.http.HttpEntity;
@@ -17,7 +18,6 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import com.honzooban.catrecruit.commoms.Constant;
 import java.util.Map;
 
 

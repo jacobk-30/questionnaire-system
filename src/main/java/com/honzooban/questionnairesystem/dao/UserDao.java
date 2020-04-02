@@ -43,4 +43,18 @@ public interface UserDao {
      * @return
      */
     Integer insertTestForecast(SubmitParam param);
+
+    /**
+     * 修改用户状态信息
+     * @param id 用户id
+     * @return
+     */
+    Integer updateUserStatus(Integer id);
+
+    /**
+     * 根据用户id查找用户openId
+     * @param id 用户id
+     * @return
+     */
+    String selectOpenIdById(Integer id);
 }

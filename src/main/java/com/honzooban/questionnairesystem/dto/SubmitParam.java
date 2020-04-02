@@ -20,6 +20,8 @@ public class SubmitParam {
     private String college;
     @NotNull(message = "问卷类型不能为空")
     private Integer status;
+    @NotNull(message = "是否喜欢该专业不能为空")
+    private Integer isLike;
 
     private Integer question1;
     private Integer question2;
@@ -147,6 +149,14 @@ public class SubmitParam {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public Integer getIsLike() {
+        return isLike;
+    }
+
+    public void setIsLike(Integer isLike) {
+        this.isLike = isLike;
     }
 
     public Integer getQuestion1() {

@@ -4,6 +4,7 @@ import com.honzooban.questionnairesystem.common.CommonResult;
 import com.honzooban.questionnairesystem.common.ResultCodeEnum;
 import com.honzooban.questionnairesystem.dao.model.Question;
 import com.honzooban.questionnairesystem.dao.model.User;
+import com.honzooban.questionnairesystem.dto.LoginParam;
 import com.honzooban.questionnairesystem.dto.SubmitParam;
 import com.honzooban.questionnairesystem.service.UserService;
 import com.honzooban.questionnairesystem.util.HandleErrorsUtil;
@@ -32,12 +33,16 @@ public class UserController {
 
     /**
      * 用户登录
-     * @param code 登录凭证
+     * @param param 登录信息
      * @return 登录结果
      */
-    @GetMapping("login/{code}")
-    public CommonResult login(@PathVariable("code") String code){
-        User user = userService.login(code);
+    @PostMapping("login")
+    public CommonResult login(@RequestBody @Valid LoginParam param, Errors errors){
+        Map<String, String> errorsMap = HandleErrorsUtil.handleErrors(errors);
+        if(CommonValidator.notNull(errorsMap)){
+            return CommonResult.failed(ResultCodeEnum.VALIDATE_FAILED, errorsMap);
+        }
+        User user = userService.login(param.getCode());
         return CommonValidator.notNull(user)? CommonResult.success("登录成功", user):
                 CommonResult.failed(ResultCodeEnum.FAILED, "请求参数有误");
     }
@@ -66,7 +71,7 @@ public class UserController {
         }
         boolean result = userService.submitQuestionnaire(param);
         return result? CommonResult.success("提交成功"):
-                CommonResult.failed(ResultCodeEnum.FAILED, "提交信息有误");
+                CommonResult.failed(ResultCodeEnum.FAILED, "该账号已提交过问卷或提交频繁，请重试");
     }
 
 }

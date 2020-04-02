@@ -15,7 +15,7 @@ public class QuestionnaireData {
     private Integer uid;
     private Integer grade;
     private String college;
-    private Integer isLove;
+    private Integer isLike;
 
     private Integer question1;
     private Integer question2;
@@ -137,12 +137,12 @@ public class QuestionnaireData {
         this.college = college;
     }
 
-    public Integer getIsLove() {
-        return isLove;
+    public Integer getIsLike() {
+        return isLike;
     }
 
-    public void setIsLove(Integer isLove) {
-        this.isLove = isLove;
+    public void setIsLike(Integer isLike) {
+        this.isLike = isLike;
     }
 
     public Integer getQuestion1() {
