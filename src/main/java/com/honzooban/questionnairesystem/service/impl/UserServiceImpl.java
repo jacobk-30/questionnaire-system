@@ -7,6 +7,7 @@ import com.honzooban.questionnairesystem.dao.model.User;
 import com.honzooban.questionnairesystem.dto.SubmitParam;
 import com.honzooban.questionnairesystem.service.UserService;
 import com.honzooban.questionnairesystem.util.HttpUtil;
+import com.honzooban.questionnairesystem.util.Id3Util;
 import com.honzooban.questionnairesystem.util.RedisUtil;
 import com.honzooban.questionnairesystem.util.vaild.CommonValidator;
 import net.sf.json.JSONObject;
@@ -31,6 +32,8 @@ public class UserServiceImpl implements UserService {
     private RedisUtil redisUtil;
     @Autowired
     private UserDao userDao;
+    @Autowired
+    Id3Util id3Util;
 
     @Override
     public User login(String code) {
@@ -38,14 +41,14 @@ public class UserServiceImpl implements UserService {
         code2SessionParam.put("js_code", code);
         JSONObject object = HttpUtil.doGet(Constant.LOGIN_API, code2SessionParam);
         String openId = (String) object.get(Constant.OPEN_ID);
-        if(CommonValidator.notNull(openId)){
+        if (CommonValidator.notNull(openId)) {
             User user = (User) redisUtil.selectCache(openId, User.class);
-            if(CommonValidator.notNull(user)){
+            if (CommonValidator.notNull(user)) {
                 return user;
             }
         }
         User user = new User(openId, Constant.UN_FINISH);
-        if(CommonValidator.isProcessSuccess(userDao.insertUser(user), Constant.ONE_LINE)){
+        if (CommonValidator.isProcessSuccess(userDao.insertUser(user), Constant.ONE_LINE)) {
             redisUtil.insertCache(openId, user);
             return user;
         }
@@ -59,32 +62,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean submitQuestionnaire(SubmitParam param) {
+    public boolean submitTestQuestionnaire(SubmitParam param) {
         // 获取用户openId
         String openId = userDao.selectOpenIdById(param.getUid());
         // 检查用户是否已经提交过问卷
-        if(CommonValidator.notNull(openId)){
+        if (CommonValidator.notNull(openId)) {
             User user = (User) redisUtil.selectCache(openId, User.class);
-            if(CommonValidator.notNull(user)){
-                if(user.getStatus().equals(Constant.FINISH)) {
+            if (CommonValidator.notNull(user)) {
+                if (user.getStatus().equals(Constant.FINISH)) {
                     return false;
                 }
             }
         }
-        // 判断用户提交的问卷是训练或真实
-        if(param.getStatus().equals(Constant.TEST_INPUT)){
-            if(CommonValidator.isProcessSuccess(userDao.insertTestInput(param), Constant.ONE_LINE)){
-                if(CommonValidator.isProcessSuccess(userDao.updateUserStatus(param.getUid()), Constant.ONE_LINE)){
-                    // 修改用户的status为已提交
-                    redisUtil.updateCache(openId, Constant.STATUS, Constant.FINISH);
-                    return true;
-                }
-                return false;
-            }
-            return false;
-        }
-        if(CommonValidator.isProcessSuccess(userDao.insertTestForecast(param), Constant.ONE_LINE)){
-            if(CommonValidator.isProcessSuccess(userDao.updateUserStatus(param.getUid()), Constant.ONE_LINE)){
+        if (CommonValidator.isProcessSuccess(userDao.insertTestInput(param), Constant.ONE_LINE)) {
+            if (CommonValidator.isProcessSuccess(userDao.updateUserStatus(param.getUid()), Constant.ONE_LINE)) {
                 // 修改用户的status为已提交
                 redisUtil.updateCache(openId, Constant.STATUS, Constant.FINISH);
                 return true;
@@ -92,6 +83,30 @@ public class UserServiceImpl implements UserService {
             return false;
         }
         return false;
+
     }
 
+    @Override
+    public Integer submitForecastQuestionnaire(SubmitParam param) {
+        // 获取用户openId
+        String openId = userDao.selectOpenIdById(param.getUid());
+        // 检查用户是否已经提交过问卷
+        if (CommonValidator.notNull(openId)) {
+            User user = (User) redisUtil.selectCache(openId, User.class);
+            if (CommonValidator.notNull(user)) {
+                if (user.getStatus().equals(Constant.FINISH)) {
+                    return -1;
+                }
+            }
+        }
+        if (CommonValidator.isProcessSuccess(userDao.insertTestInput(param), Constant.ONE_LINE)) {
+            if (CommonValidator.isProcessSuccess(userDao.updateUserStatus(param.getUid()), Constant.ONE_LINE)) {
+                // 修改用户的status为已提交
+                redisUtil.updateCache(openId, Constant.STATUS, Constant.FINISH);
+                return id3Util.getPredictedResult(param);
+            }
+            return -1;
+        }
+        return -1;
+    }
 }

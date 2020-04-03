@@ -88,6 +88,13 @@
             <artifactId>xstream</artifactId>
             <version>1.4.11.1</version>
         </dependency>
+        <!-- 谷歌工具包 -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>25.1-jre</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,5 +1,7 @@
 package com.honzooban.questionnairesystem.util.vaild;
 
+import org.dom4j.Element;
+
 /**
  * @author honzooban
  * @version 1.0.0
@@ -27,4 +29,5 @@ public class CommonValidator {
     public static <T> boolean notNull(T obj){
         return null != obj;
     }
+
 }

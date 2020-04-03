@@ -1,6 +1,8 @@
 package com.honzooban.questionnairesystem.util;
 
 import com.honzooban.questionnairesystem.common.Constant;
+import com.honzooban.questionnairesystem.dto.SubmitParam;
+import com.honzooban.questionnairesystem.util.vaild.CommonValidator;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.DocumentHelper;
@@ -12,6 +14,8 @@ import weka.core.Utils;
 
 import javax.rmi.CORBA.Util;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,7 +51,7 @@ public class Id3Util {
     public static final String patternString = "@attribute(.*)[{](.*?)[}]";
 
     private Document document;
-    private Element root;
+    private static Element root;
 
     private static final Logger logger = LoggerFactory.getLogger(Id3Util.class);
 
@@ -58,10 +62,30 @@ public class Id3Util {
     }
 
     /**
+     * 初始化决策树
+     */
+    public void init(){
+        readArff(new File(Constant.TRAINING_SET_FILE));
+        setDecatt(Constant.DECATT);
+        LinkedList<Integer> attributeIndexList =new LinkedList<>();
+        for(int i = 0; i < attribute.size(); i++){
+            if(i != decatt) {
+                attributeIndexList.add(i);
+            }
+        }
+        ArrayList<Integer> dataIndexList = new ArrayList<>();
+        for(int i = 0; i < data.size(); i++){
+            dataIndexList.add(i);
+        }
+        this.buildDecisionTree("DecisionTree", null, dataIndexList, attributeIndexList, root);
+        this.writeXML(Constant.DECISION_TREE_FILE);
+    }
+
+    /**
      * 读取arff文件
      * @param file arff文件
      */
-    public void readArff(File file){
+    private void readArff(File file){
         try {
             FileReader fileReader = new FileReader(file);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -103,7 +127,7 @@ public class Id3Util {
      * 设置决策变量
      * @param n 决策变量索引
      */
-    public void setDecatt(int n) {
+    private void setDecatt(int n) {
         if (n < 0 || n >= attribute.size()) {
             logger.error("决策变量指定错误");
             System.exit(2);
@@ -115,7 +139,7 @@ public class Id3Util {
      * 设置决策变量
      * @param name 决策变量名称
      */
-    public void setDecatt(String name) {
+    private void setDecatt(String name) {
         int n = attribute.indexOf(name);
         setDecatt(n);
     }
@@ -125,7 +149,7 @@ public class Id3Util {
      * @param array 数组
      * @return
      */
-    public double getEntropy(int[] array){
+    private double getEntropy(int[] array){
         int sum = 0;
         for(int i = 0; i < array.length; i++){
             sum += array[i];
@@ -139,7 +163,7 @@ public class Id3Util {
      * @param sum 给定数组的算术和
      * @return
      */
-    public double getEntropy(int[] array, int sum) {
+    private double getEntropy(int[] array, int sum) {
         double entropy = 0.0;
         for (int i = 0; i < array.length; i++) {
             if(array[i] == 0){
@@ -155,7 +179,7 @@ public class Id3Util {
      * @param subset 数据集
      * @return 检查结果
      */
-    public boolean isClassesUnanimous(ArrayList<Integer> subset){
+    private boolean isClassesUnanimous(ArrayList<Integer> subset){
         int count = 1;
         Integer value = data.get(subset.get(0))[decatt];
         for(int i = 1; i < subset.size(); i++){
@@ -174,7 +198,7 @@ public class Id3Util {
      * @param index 属性索引
      * @return
      */
-    public double calNodeEntropy(ArrayList<Integer> subset, int index){
+    private double calNodeEntropy(ArrayList<Integer> subset, int index){
         // 数据集剩余个数
         int sum = subset.size();
         double entropy = 0.0;
@@ -205,9 +229,9 @@ public class Id3Util {
      * @param subset 数据集的索引集合
      * @param selatt 属性集的索引集合
      */
-    public void buildDecisionTree(String name, String value, ArrayList<Integer> subset, LinkedList<Integer> selatt){
+    private void buildDecisionTree(String name, String value, ArrayList<Integer> subset, LinkedList<Integer> selatt, Element parent){
         Element element = null;
-        List<Element> list = root.selectNodes("//" + name);
+        List<Element> list = parent.selectNodes(name);
         Iterator<Element> iterator = list.iterator();
         // 确定element的位置
         while(iterator.hasNext()){
@@ -216,13 +240,18 @@ public class Id3Util {
                 break;
             }
         }
-        // 如果数据集中所有取值的类标号一致，则创建叶结点
-        if(isClassesUnanimous(subset)) {
-            logger.info(name);
+        // 可选属性已为空时结束递归
+        if(selatt.size() == 0){
             element.setText(String.valueOf(data.get(subset.get(0))[decatt]));
             return;
         }
-        int minIndex = -1;
+        // 如果数据集中所有取值的类标号一致，则创建叶结点
+        if(isClassesUnanimous(subset)) {
+            element.setText(String.valueOf(data.get(subset.get(0))[decatt]));
+            return;
+        }
+        int minIndex = 0;
+        int minEntropySelatt = selatt.get(0);
         double minEntropy = Double.MAX_VALUE;
         // 获取最低属性熵的索引并赋值给minIndex
         for(int i = 1; i < selatt.size(); i++){
@@ -232,30 +261,36 @@ public class Id3Util {
             // 计算每个属性的信息熵
             double entropy = calNodeEntropy(subset, selatt.get(i));
             if(entropy < minEntropy){
-                minIndex = selatt.get(i);
+                minEntropySelatt = selatt.get(i);
+                minIndex = i;
                 minEntropy = entropy;
             }
         }
-        String nodeName = attribute.get(minIndex);
+        String nodeName = attribute.get(minEntropySelatt);
+//        System.out.println(nodeName);
         // 从属性表中去除此属性
-        // debug点，属性并未删去
         selatt.remove(minIndex);
-        ArrayList<Integer> attributeValues = attributeValue.get(minIndex);
-        // debug点，有重复添加element的bug
+        ArrayList<Integer> attributeValues = attributeValue.get(minEntropySelatt);
         for(Integer attValue : attributeValues){
             Element newElement = element.addElement(nodeName).addAttribute("value", String.valueOf(attValue));
             ArrayList<Integer> arrayList = new ArrayList<>();
             for (int i = 0; i < subset.size(); i++){
-                if(data.get(subset.get(i))[minIndex].equals(attValue)){
+                if(data.get(subset.get(i))[minEntropySelatt].equals(attValue)){
                     arrayList.add(subset.get(i));
                 }
             }
+            // 样本子集为空，删除该结点
             if(arrayList.size() == 0){
                 element.remove(newElement);
                 continue;
             }
+            // 样本子集全部属于同一个类别，则创建叶子结点并标号
+            if(isClassesUnanimous(arrayList)){
+                newElement.setText(String.valueOf(data.get(subset.get(0))[decatt]));
+                continue;
+            }
             // 递归调用建立树
-            buildDecisionTree(nodeName, String.valueOf(attValue), arrayList, selatt);
+            buildDecisionTree(nodeName, String.valueOf(attValue), arrayList, selatt, element);
         }
     }
 
@@ -263,7 +298,7 @@ public class Id3Util {
      * 将xml写入文件
      * @param fileName 文件名
      */
-    public void writeXML(String fileName){
+    private void writeXML(String fileName){
             try {
                 File file = new File(fileName);
                 if(!file.exists()) {
@@ -281,32 +316,65 @@ public class Id3Util {
 
     public static void main(String[] args) {
         Id3Util id3Util = new Id3Util();
-        id3Util.readArff(new File("C:/Users/93231/Desktop/questionnaire.arff"));
-        id3Util.setDecatt("is_like");
-        LinkedList<Integer> ll=new LinkedList<>();
-        for(int i = 0; i < id3Util.attribute.size(); i++){
-            if(i != id3Util.decatt) {
-                ll.add(i);
+        id3Util.init();
+        SubmitParam data = new SubmitParam();
+        data.setQuestion30(1);
+        data.setQuestion4(1);
+        data.setQuestion53(1);
+        data.setQuestion22(4);
+        data.setQuestion73(2);
+        data.setQuestion3(2);
+        System.out.println(id3Util.getPredictedResult(data));
+//        Id3Util inst = new Id3Util();
+//        inst.readArff(new File(Constant.TRAINING_SET_FILE));
+//        inst.setDecatt("is_like");
+//        LinkedList<Integer> ll=new LinkedList<Integer>();
+//        for(int i=0;i<inst.attribute.size();i++){
+//            if(i!=inst.decatt) {
+//                ll.add(i);
+//            }
+//        }
+//        ArrayList<Integer> al=new ArrayList<Integer>();
+//        for(int i=0;i<inst.data.size();i++){
+//            al.add(i);
+//        }
+//        inst.buildDecisionTree("DecisionTree", "null", al, ll, root);
+//        inst.writeXML(Constant.DECISION_TREE_FILE);
+//        return;
+    }
+
+    /**
+     * 根据决策树获取预测结果
+     * @return
+     */
+    public Integer getPredictedResult(SubmitParam data){
+        Element decisionTree = document.getRootElement().element("DecisionTree");
+        String predictedResult = getResult(decisionTree, data);
+        return CommonValidator.notNull(predictedResult)? Integer.parseInt(predictedResult): null;
+    }
+
+    /**
+     * 根据问卷数据在决策树中遍历获取结果
+     * @param parent 上一个节点
+     * @param data 问卷数据
+     * @return
+     */
+    private String getResult(Element parent, SubmitParam data){
+        Iterator iterator = parent.elementIterator();
+        while(iterator.hasNext()){
+            Element next = (Element) iterator.next();
+            String methodName = "get_" + next.getName();
+            try {
+                Integer value = (Integer) MethodUtil.getMethod(methodName, data).invoke(data, null);
+                if(next.attributeValue("value").equals(String.valueOf(value))){
+                    return getResult(next, data);
+                }
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
             }
         }
-        ArrayList<Integer> al = new ArrayList<>();
-        for(int i = 0; i < id3Util.data.size(); i++){
-            al.add(i);
-        }
-        id3Util.buildDecisionTree("DecisionTree", "null", al, ll);
-        id3Util.writeXML("C:/Users/93231/Desktop/dt.xml");
-        return;
-    }
-
-    public ArrayList<String> getAttribute() {
-        return attribute;
-    }
-
-    public ArrayList<Integer[]> getData() {
-        return data;
-    }
-
-    public int getDecatt() {
-        return decatt;
+        return parent.getTextTrim();
     }
 }

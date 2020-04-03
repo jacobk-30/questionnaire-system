@@ -1,5 +1,6 @@
 package com.honzooban.questionnairesystem.controller;
 
+import afu.org.checkerframework.checker.units.qual.A;
 import com.honzooban.questionnairesystem.common.CommonResult;
 import com.honzooban.questionnairesystem.common.ResultCodeEnum;
 import com.honzooban.questionnairesystem.dao.model.Question;
@@ -8,6 +9,7 @@ import com.honzooban.questionnairesystem.dto.LoginParam;
 import com.honzooban.questionnairesystem.dto.SubmitParam;
 import com.honzooban.questionnairesystem.service.UserService;
 import com.honzooban.questionnairesystem.util.HandleErrorsUtil;
+import com.honzooban.questionnairesystem.util.Id3Util;
 import com.honzooban.questionnairesystem.util.vaild.CommonValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.Errors;
@@ -63,15 +65,36 @@ public class UserController {
      * @param param 提交信息
      * @return 提交结果
      */
-    @PostMapping("submitQuestionnaire")
-    public CommonResult submitQuestionnaire(@RequestBody @Valid SubmitParam param, Errors errors){
+    @PostMapping("submitTestQuestionnaire")
+    public CommonResult submitTestQuestionnaire(@RequestBody @Valid SubmitParam param, Errors errors){
         Map<String, String> errorsMap = HandleErrorsUtil.handleErrors(errors);
         if(CommonValidator.notNull(errorsMap)){
             return CommonResult.failed(ResultCodeEnum.VALIDATE_FAILED, errorsMap);
         }
-        boolean result = userService.submitQuestionnaire(param);
+        boolean result = userService.submitTestQuestionnaire(param);
         return result? CommonResult.success("提交成功"):
                 CommonResult.failed(ResultCodeEnum.FAILED, "该账号已提交过问卷或提交频繁，请重试");
+
     }
+
+
+    /**
+     * 提交问卷
+     * @param param 提交信息
+     * @return 提交结果
+     */
+    @PostMapping("submitTestQuestionnaire")
+    public CommonResult submitForecastQuestionnaire(@RequestBody @Valid SubmitParam param, Errors errors){
+        Map<String, String> errorsMap = HandleErrorsUtil.handleErrors(errors);
+        if(CommonValidator.notNull(errorsMap)){
+            return CommonResult.failed(ResultCodeEnum.VALIDATE_FAILED, errorsMap);
+        }
+        Integer result = userService.submitForecastQuestionnaire(param);
+        return result == -1? CommonResult.failed(ResultCodeEnum.FAILED, "该账号已提交过问卷或提交频繁，请重试"):
+                CommonResult.success("提交成功", result);
+
+    }
+
+
 
 }

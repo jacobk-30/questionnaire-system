@@ -20,19 +20,19 @@ import java.util.Random;
  */
 public class ProduceDataUtil {
 
-//    public static void main(String[] args) {
-//        Random random = new Random(4);
-//        for(int j = 0; j < 80; j++){
-//            String[] array1 = {"2","4","1","5","3"};
-//            String[] array2 = {"1","0"};
-//            int i = 0;
-//            StringBuilder stringBuilder = new StringBuilder();
-//            while(i < 80){
-//                stringBuilder.append(array1[random.nextInt(5)] + ",");
-//                i++;
-//            }
-//            stringBuilder.append(array2[random.nextInt(2)]);
-//            System.out.println(stringBuilder);
-//        }
-//    }
+    public static void main(String[] args) {
+        Random random = new Random(4);
+        for(int j = 0; j <= 2000; j++){
+            String[] array1 = {"5","4","3","2","1"};
+            String[] array2 = {"0","1"};
+            int i = 0;
+            StringBuilder stringBuilder = new StringBuilder();
+            while(i < 80){
+                stringBuilder.append(array1[random.nextInt(5)] + ",");
+                i++;
+            }
+            stringBuilder.append(array2[random.nextInt(2)]);
+            System.out.println(stringBuilder);
+        }
+    }
 }

@@ -25,19 +25,7 @@ public class Id3Config {
     @Bean
     Id3Util id3Util(){
         Id3Util id3Util = new Id3Util();
-        id3Util.setDecatt(Constant.DECATT);
-        LinkedList<Integer> attributeIndexList =new LinkedList<>();
-        for(int i = 0; i < id3Util.getAttribute().size(); i++){
-            if(i != id3Util.getDecatt()) {
-                attributeIndexList.add(i);
-            }
-        }
-        ArrayList<Integer> dataIndexList = new ArrayList<>();
-        for(int i = 0; i < id3Util.getData().size(); i++){
-            dataIndexList.add(i);
-        }
-        id3Util.buildDecisionTree("DecisionTree", null, dataIndexList, attributeIndexList);
-        id3Util.writeXML(Constant.DECISION_TREE_FILE);
+        id3Util.init();
         return id3Util;
     }
 }

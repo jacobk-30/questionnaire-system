@@ -20,7 +20,6 @@ public class SubmitParam {
     private String college;
     @NotNull(message = "问卷类型不能为空")
     private Integer status;
-    @NotNull(message = "是否喜欢该专业不能为空")
     private Integer isLike;
 
     private Integer question1;

@@ -29,9 +29,16 @@ public interface UserService {
     ArrayList<Question> listQuestion();
 
     /**
-     * 提交问卷
+     * 提交问卷（训练）
      * @param param 提交信息
      * @return 提交结果
      */
-    boolean submitQuestionnaire(SubmitParam param);
+    boolean submitTestQuestionnaire(SubmitParam param);
+
+    /**
+     * 提交问卷（预测）
+     * @param param 提交信息
+     * @return 预测结果
+     */
+    Integer submitForecastQuestionnaire(SubmitParam param);
 }
