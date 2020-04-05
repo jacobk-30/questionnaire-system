@@ -49,9 +49,11 @@ public class Constant {
     public static final Integer FINISH = 1;
     public static final Integer ONE_LINE = 1;
     public static final Integer TEST_INPUT = 0;
-    public static final double CLASSES_UNANIMOUS = 0.80d;
+    public static final double CLASSES_UNANIMOUS = 0.95d;
 
     public static final String DECATT = "is_like";
-    public static final String TRAINING_SET_FILE = "C:/Users/93231/Desktop/questionnaire.arff";
-    public static final String DECISION_TREE_FILE = "C:/Users/93231/Desktop/decision_tree.xml";
+    public static final String TRAINING_SET_FILE_WINDOWS = "C:\\Users\\93231\\Desktop\\questionnaire.arff";
+    public static final String DECISION_TREE_FILE_WINDOWS = "C:\\Users\\93231\\Desktop\\decision_tree.xml";
+    public static final String TRAINING_SET_FILE = "/usr/questionnaire-system/questionnaire.arff";
+    public static final String DECISION_TREE_FILE = "/usr/questionnaire-system/decision_tree.xml";
 }

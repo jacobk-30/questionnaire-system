@@ -1,8 +1,11 @@
 package com.honzooban.questionnairesystem.util;
 
 import com.honzooban.questionnairesystem.common.Constant;
+import com.honzooban.questionnairesystem.dao.model.User;
 import com.honzooban.questionnairesystem.dto.SubmitParam;
 import com.honzooban.questionnairesystem.util.vaild.CommonValidator;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.ibatis.reflection.ArrayUtil;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.DocumentHelper;
@@ -67,13 +70,13 @@ public class Id3Util {
     public void init(){
         readArff(new File(Constant.TRAINING_SET_FILE));
         setDecatt(Constant.DECATT);
-        LinkedList<Integer> attributeIndexList =new LinkedList<>();
+        ArrayList<Integer> attributeIndexList =new ArrayList<>(attribute.size());
         for(int i = 0; i < attribute.size(); i++){
             if(i != decatt) {
                 attributeIndexList.add(i);
             }
         }
-        ArrayList<Integer> dataIndexList = new ArrayList<>();
+        ArrayList<Integer> dataIndexList = new ArrayList<>(data.size());
         for(int i = 0; i < data.size(); i++){
             dataIndexList.add(i);
         }
@@ -229,7 +232,7 @@ public class Id3Util {
      * @param subset 数据集的索引集合
      * @param selatt 属性集的索引集合
      */
-    private void buildDecisionTree(String name, String value, ArrayList<Integer> subset, LinkedList<Integer> selatt, Element parent){
+    private void buildDecisionTree(String name, String value, ArrayList<Integer> subset, ArrayList<Integer> selatt, Element parent){
         Element element = null;
         List<Element> list = parent.selectNodes(name);
         Iterator<Element> iterator = list.iterator();
@@ -240,18 +243,13 @@ public class Id3Util {
                 break;
             }
         }
-        // 可选属性已为空时结束递归
-        if(selatt.size() == 0){
-            element.setText(String.valueOf(data.get(subset.get(0))[decatt]));
-            return;
-        }
         // 如果数据集中所有取值的类标号一致，则创建叶结点
         if(isClassesUnanimous(subset)) {
             element.setText(String.valueOf(data.get(subset.get(0))[decatt]));
             return;
         }
-        int minIndex = 0;
-        int minEntropySelatt = selatt.get(0);
+        int minIndex = -1;
+        int minEntropySelatt = -1;
         double minEntropy = Double.MAX_VALUE;
         // 获取最低属性熵的索引并赋值给minIndex
         for(int i = 1; i < selatt.size(); i++){
@@ -267,31 +265,42 @@ public class Id3Util {
             }
         }
         String nodeName = attribute.get(minEntropySelatt);
-//        System.out.println(nodeName);
         // 从属性表中去除此属性
-        selatt.remove(minIndex);
+        ArrayList<Integer> remainSelatt = removeAttribute(selatt, minIndex);
         ArrayList<Integer> attributeValues = attributeValue.get(minEntropySelatt);
         for(Integer attValue : attributeValues){
             Element newElement = element.addElement(nodeName).addAttribute("value", String.valueOf(attValue));
-            ArrayList<Integer> arrayList = new ArrayList<>();
+            ArrayList<Integer> remainSubset = new ArrayList<>();
             for (int i = 0; i < subset.size(); i++){
                 if(data.get(subset.get(i))[minEntropySelatt].equals(attValue)){
-                    arrayList.add(subset.get(i));
+                    remainSubset.add(subset.get(i));
                 }
             }
             // 样本子集为空，删除该结点
-            if(arrayList.size() == 0){
+            if(remainSubset.size() == 0){
                 element.remove(newElement);
                 continue;
             }
             // 样本子集全部属于同一个类别，则创建叶子结点并标号
-            if(isClassesUnanimous(arrayList)){
-                newElement.setText(String.valueOf(data.get(subset.get(0))[decatt]));
+            if(isClassesUnanimous(remainSubset)){
+                newElement.setText(String.valueOf(data.get(remainSubset.get(0))[decatt]));
                 continue;
             }
             // 递归调用建立树
-            buildDecisionTree(nodeName, String.valueOf(attValue), arrayList, selatt, element);
+            buildDecisionTree(nodeName, String.valueOf(attValue), remainSubset, remainSelatt, element);
         }
+    }
+
+    /**
+     * 删除属性表中指定索引的属性
+     * @param selatt 属性表
+     * @param index 指定索引
+     * @return
+     */
+    private ArrayList<Integer> removeAttribute(ArrayList<Integer> selatt, int index) {
+        ArrayList<Integer> arrayList = new ArrayList<>(selatt);
+        arrayList.remove(index);
+        return arrayList;
     }
 
     /**
@@ -314,35 +323,6 @@ public class Id3Util {
             }
     }
 
-    public static void main(String[] args) {
-        Id3Util id3Util = new Id3Util();
-        id3Util.init();
-        SubmitParam data = new SubmitParam();
-        data.setQuestion30(1);
-        data.setQuestion4(1);
-        data.setQuestion53(1);
-        data.setQuestion22(4);
-        data.setQuestion73(2);
-        data.setQuestion3(2);
-        System.out.println(id3Util.getPredictedResult(data));
-//        Id3Util inst = new Id3Util();
-//        inst.readArff(new File(Constant.TRAINING_SET_FILE));
-//        inst.setDecatt("is_like");
-//        LinkedList<Integer> ll=new LinkedList<Integer>();
-//        for(int i=0;i<inst.attribute.size();i++){
-//            if(i!=inst.decatt) {
-//                ll.add(i);
-//            }
-//        }
-//        ArrayList<Integer> al=new ArrayList<Integer>();
-//        for(int i=0;i<inst.data.size();i++){
-//            al.add(i);
-//        }
-//        inst.buildDecisionTree("DecisionTree", "null", al, ll, root);
-//        inst.writeXML(Constant.DECISION_TREE_FILE);
-//        return;
-    }
-
     /**
      * 根据决策树获取预测结果
      * @return
@@ -350,7 +330,8 @@ public class Id3Util {
     public Integer getPredictedResult(SubmitParam data){
         Element decisionTree = document.getRootElement().element("DecisionTree");
         String predictedResult = getResult(decisionTree, data);
-        return CommonValidator.notNull(predictedResult)? Integer.parseInt(predictedResult): null;
+        return CommonValidator.notNull(predictedResult) && !"".equals(predictedResult)? Integer.parseInt(predictedResult):
+                null;
     }
 
     /**

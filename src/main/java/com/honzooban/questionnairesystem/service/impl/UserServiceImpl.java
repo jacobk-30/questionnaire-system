@@ -99,7 +99,7 @@ public class UserServiceImpl implements UserService {
                 }
             }
         }
-        if (CommonValidator.isProcessSuccess(userDao.insertTestInput(param), Constant.ONE_LINE)) {
+        if (CommonValidator.isProcessSuccess(userDao.insertTestForecast(param), Constant.ONE_LINE)) {
             if (CommonValidator.isProcessSuccess(userDao.updateUserStatus(param.getUid()), Constant.ONE_LINE)) {
                 // 修改用户的status为已提交
                 redisUtil.updateCache(openId, Constant.STATUS, Constant.FINISH);

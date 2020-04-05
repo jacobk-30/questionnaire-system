@@ -11,6 +11,8 @@ import com.honzooban.questionnairesystem.service.UserService;
 import com.honzooban.questionnairesystem.util.HandleErrorsUtil;
 import com.honzooban.questionnairesystem.util.Id3Util;
 import com.honzooban.questionnairesystem.util.vaild.CommonValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +31,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("user")
 public class UserController {
+
+    private static Logger logger = LoggerFactory.getLogger(UserController.class);
 
     @Autowired
     UserService userService;
@@ -61,7 +65,7 @@ public class UserController {
     }
 
     /**
-     * 提交问卷
+     * 提交问卷（训练）
      * @param param 提交信息
      * @return 提交结果
      */
@@ -79,22 +83,24 @@ public class UserController {
 
 
     /**
-     * 提交问卷
+     * 提交问卷（预测）
      * @param param 提交信息
      * @return 提交结果
      */
-    @PostMapping("submitTestQuestionnaire")
+    @PostMapping("submitForecastQuestionnaire")
     public CommonResult submitForecastQuestionnaire(@RequestBody @Valid SubmitParam param, Errors errors){
         Map<String, String> errorsMap = HandleErrorsUtil.handleErrors(errors);
         if(CommonValidator.notNull(errorsMap)){
             return CommonResult.failed(ResultCodeEnum.VALIDATE_FAILED, errorsMap);
         }
         Integer result = userService.submitForecastQuestionnaire(param);
+        if(!CommonValidator.notNull(result)){
+            logger.error("用户id：" + param.getUid() + " 预测结果为空");
+            return CommonResult.failed(ResultCodeEnum.FAILED, "预测失败，模型属实不行");
+        }
+        logger.error("用户id：" + param.getUid() + "预测结果为：" + result);
         return result == -1? CommonResult.failed(ResultCodeEnum.FAILED, "该账号已提交过问卷或提交频繁，请重试"):
                 CommonResult.success("提交成功", result);
 
     }
-
-
-
 }
